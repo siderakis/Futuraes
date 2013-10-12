@@ -6,6 +6,7 @@ import java.util.Collection
 import scala.concurrent.forkjoin._
 import scala.concurrent.{BlockContext, ExecutionContext, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService}
 import scala.util.control.NonFatal
+import com.google.appengine.api.ThreadManager
 
 
 private[scala] class ExecutionContextAppEngineImpl(es: Executor, reporter: Throwable => Unit) extends ExecutionContextExecutor {
@@ -27,7 +28,8 @@ private[scala] class ExecutionContextAppEngineImpl(es: Executor, reporter: Throw
       thread
     }
 
-    def newThread(runnable: Runnable): Thread = wire(new Thread(runnable))
+    def newThread(runnable: Runnable): Thread = wire(ThreadManager.currentRequestThreadFactory().newThread(runnable)
+    )
 
     def newThread(fjp: ForkJoinPool): ForkJoinWorkerThread = wire(new ForkJoinWorkerThread(fjp) with BlockContext {
       override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = {
@@ -126,10 +128,10 @@ private[scala] class ExecutionContextAppEngineImpl(es: Executor, reporter: Throw
 }
 
 private[concurrent] object ExecutionContextAppEngineImpl {
-  def fromExecutor(e: Executor, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextImpl = new ExecutionContextImpl(e, reporter)
+  def fromExecutor(e: Executor, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextAppEngineImpl = new ExecutionContextAppEngineImpl(e, reporter)
 
-  def fromExecutorService(es: ExecutorService, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextImpl with ExecutionContextExecutorService =
-    new ExecutionContextImpl(es, reporter) with ExecutionContextExecutorService {
+  def fromExecutorService(es: ExecutorService, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextAppEngineImpl with ExecutionContextExecutorService =
+    new ExecutionContextAppEngineImpl(es, reporter) with ExecutionContextExecutorService {
       final def asExecutorService: ExecutorService = executor.asInstanceOf[ExecutorService]
 
       override def execute(command: Runnable) = executor.execute(command)
@@ -160,7 +162,5 @@ private[concurrent] object ExecutionContextAppEngineImpl {
 
       override def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = asExecutorService.invokeAny(callables, l, timeUnit)
     }
-}
-
 
 }

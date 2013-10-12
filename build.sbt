@@ -1,6 +1,6 @@
 import sbtappengine.Plugin.{AppengineKeys => gae}
 
-name := "sample"
+name := "Futuraes"
 
 scalaVersion := "2.10.2"
 
@@ -19,7 +19,3 @@ appengineSettings
 (gae.onStopHooks in gae.devServer in Compile) += { () =>
   println("bye")
 }
-
-appengineDataNucleusSettings
-
-gae.persistenceApi in gae.enhance in Compile := "JDO"
