@@ -1,5 +1,3 @@
-import com.google.appengine.api.ThreadManager
-import java.util.concurrent.{ExecutorService, Executors}
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest, HttpServlet}
 import scala.concurrent._
 import scala.util.control.NonFatal
@@ -26,21 +24,19 @@ class FuturaeServlet extends HttpServlet {
 
     resp.getOutputStream.println("App Engine")
 
-    //    val f1: Traversable[Future[String]] = (1 to 4).map(a => future("f1:" + a))
-    //    val f2: Traversable[Future[String]] = (1 to 4).map(a => future("f2:" + a))
+    Seq[Traversable[Future[String]]](
+      (1 to 4).map(a => future("F1:" + a)),
+      (1 to 4).map(a => future("F2:" + a))
+    ).flatten.foreach(_.foreach(resp.getOutputStream.println))
 
-    val f1: Future[Traversable[String]] = future((1 to 100).map(a => ("f1:" + a)))
-    val f2: Future[Traversable[String]] = future((1 to 100).map(a => ("f2:" + a)))
+    Seq[Future[Traversable[String]]](
+      future((1 to 100).map(a => ("f1:" + a))),
+      future((1 to 100).map(a => ("f2:" + a)))
+    ).foreach(_.foreach(_.foreach(resp.getOutputStream.println)))
 
-
-    f1.foreach(_.foreach(resp.getOutputStream.println))
-    f2.foreach(_.foreach(resp.getOutputStream.println))
-
-
-    Thread.sleep(2000)
+    Thread.sleep(1000)
 
     //resp.getOutputStream.close()
-
 
   }
 
