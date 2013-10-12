@@ -23,7 +23,7 @@ private[scala] class ExecutionContextAppEngineImpl(es: Executor, reporter: Throw
   // Implement BlockContext on FJP threads
   class DefaultThreadFactory(daemonic: Boolean) extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
     def wire[T <: Thread](thread: T): T = {
-      thread.setDaemon(daemonic)
+      //thread.setDaemon(daemonic)
       thread.setUncaughtExceptionHandler(uncaughtExceptionHandler)
       thread
     }
