@@ -28,8 +28,7 @@ private[scala] class ExecutionContextAppEngineImpl(es: Executor, reporter: Throw
       thread
     }
 
-    def newThread(runnable: Runnable): Thread = wire(ThreadManager.currentRequestThreadFactory().newThread(runnable)
-    )
+    def newThread(runnable: Runnable): Thread = wire(ThreadManager.currentRequestThreadFactory().newThread(runnable))
 
     def newThread(fjp: ForkJoinPool): ForkJoinWorkerThread = wire(new ForkJoinWorkerThread(fjp) with BlockContext {
       override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = {
@@ -71,16 +70,6 @@ private[scala] class ExecutionContextAppEngineImpl(es: Executor, reporter: Throw
 
     val threadFactory = new DefaultThreadFactory(daemonic = true)
 
-    try {
-      new ForkJoinPool(
-        desiredParallelism,
-        threadFactory,
-        uncaughtExceptionHandler,
-        true) // Async all the way baby
-    } catch {
-      case NonFatal(t) =>
-        System.err.println("Failed to create ForkJoinPool for the default ExecutionContext, falling back to ThreadPoolExecutor")
-        t.printStackTrace(System.err)
         val exec = new ThreadPoolExecutor(
           desiredParallelism,
           desiredParallelism,
@@ -91,7 +80,6 @@ private[scala] class ExecutionContextAppEngineImpl(es: Executor, reporter: Throw
         )
         exec.allowCoreThreadTimeOut(true)
         exec
-    }
   }
 
 
