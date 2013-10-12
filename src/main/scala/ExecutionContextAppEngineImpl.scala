@@ -1,12 +1,15 @@
 package scala.concurrent.impl
 
 
-import java.util.concurrent.{LinkedBlockingQueue, Callable, Executor, ExecutorService, ThreadFactory, TimeUnit, ThreadPoolExecutor}
+import java.util.concurrent._
 import java.util.Collection
 import scala.concurrent.forkjoin._
 import scala.concurrent.{BlockContext, ExecutionContext, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService}
 import scala.util.control.NonFatal
 import com.google.appengine.api.ThreadManager
+import scala.concurrent.forkjoin.ForkJoinTask
+import scala.concurrent.forkjoin.ForkJoinPool
+import scala.concurrent.forkjoin.ForkJoinWorkerThread
 
 
 private[scala] class ExecutionContextAppEngineImpl(es: Executor, reporter: Throwable => Unit) extends ExecutionContextExecutor {
@@ -50,37 +53,10 @@ private[scala] class ExecutionContextAppEngineImpl(es: Executor, reporter: Throw
     })
   }
 
-  def createExecutorService: ExecutorService = {
+  def createExecutorService: ExecutorService =
 
-    def getInt(name: String, f: String => Int): Int =
-      try f(System.getProperty(name)) catch {
-        case e: Exception => Runtime.getRuntime.availableProcessors
-      }
-    def range(floor: Int, desired: Int, ceiling: Int): Int =
-      if (ceiling < floor) range(ceiling, desired, floor) else scala.math.min(scala.math.max(desired, floor), ceiling)
+    Executors.newCachedThreadPool(ThreadManager.currentRequestThreadFactory())
 
-    val desiredParallelism = range(
-      getInt("scala.concurrent.context.minThreads", _.toInt),
-      getInt("scala.concurrent.context.numThreads", {
-        case null | "" => Runtime.getRuntime.availableProcessors
-        case s if s.charAt(0) == 'x' => (Runtime.getRuntime.availableProcessors * s.substring(1).toDouble).ceil.toInt
-        case other => other.toInt
-      }),
-      getInt("scala.concurrent.context.maxThreads", _.toInt))
-
-    val threadFactory = new DefaultThreadFactory(daemonic = true)
-
-        val exec = new ThreadPoolExecutor(
-          desiredParallelism,
-          desiredParallelism,
-          5L,
-          TimeUnit.MINUTES,
-          new LinkedBlockingQueue[Runnable],
-          threadFactory
-        )
-        exec.allowCoreThreadTimeOut(true)
-        exec
-  }
 
 
   def execute(runnable: Runnable): Unit = executor match {
