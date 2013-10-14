@@ -1,5 +1,6 @@
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest, HttpServlet}
 import scala.concurrent._
+import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
@@ -23,24 +24,31 @@ class FuturaeServlet extends HttpServlet {
   override def doGet(req: HttpServletRequest, resp: HttpServletResponse) = {
 
     resp.getOutputStream.println("App Engine")
-
-    Seq[Traversable[Future[String]]](
+    
+		// Create 8 futures
+    val f1 = Seq[Traversable[Future[String]]](
       (1 to 4).map(a => future("F1:" + a)),
       (1 to 4).map(a => future("F2:" + a))
-    ).flatten.foreach(_.foreach(resp.getOutputStream.println))
+    )
+		
+		// Print out values
+		f1.flatten.foreach(_.foreach(resp.getOutputStream.println))
 
-    Seq[Future[Traversable[String]]](
+		// Create 2 futures with 100 values each
+    val f2 = Seq[Future[Traversable[String]]](
       future((1 to 100).map(a => ("f1:" + a))),
       future((1 to 100).map(a => ("f2:" + a)))
-    ).foreach(_.foreach(_.foreach(resp.getOutputStream.println)))
+    )
+		
+    // Print out values
+		f2.foreach(_.foreach(_.foreach(resp.getOutputStream.println)))
 
-    Thread.sleep(1000)
-
-    //resp.getOutputStream.close()
+		// Wait before returning. """threads can't "outlive" the request that creates them."""
+	  Await.ready(Future.sequence(f1.flatten ++ f2), 100 millis)
+		
+    resp.getOutputStream.close()
 
   }
-
-
 }
 
 
