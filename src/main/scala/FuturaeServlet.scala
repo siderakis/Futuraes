@@ -22,8 +22,11 @@ class FuturaeServlet extends HttpServlet {
   import ExecutionContextAE.ImplicitsAE._
 
   override def doGet(req: HttpServletRequest, resp: HttpServletResponse) = {
-
-    resp.getOutputStream.println("App Engine")
+		
+		val outputSream = resp.getOutputStream
+		import outputSream.{println => print, close}
+    
+		print("Scala Futures on App Engine")
     
 		// Create 8 futures
     val f1 = Seq[Traversable[Future[String]]](
@@ -32,7 +35,7 @@ class FuturaeServlet extends HttpServlet {
     )
 		
 		// Print out values
-		f1.flatten.foreach(_.foreach(resp.getOutputStream.println))
+		f1.flatten.foreach(_.foreach(print))
 
 		// Create 2 futures with 100 values each
     val f2 = Seq[Future[Traversable[String]]](
@@ -41,12 +44,43 @@ class FuturaeServlet extends HttpServlet {
     )
 		
     // Print out values
-		f2.foreach(_.foreach(_.foreach(resp.getOutputStream.println)))
+		f2.foreach(_.foreach(_.foreach(print)))
 
-		// Wait before returning. """threads can't "outlive" the request that creates them."""
-	  Await.ready(Future.sequence(f1.flatten ++ f2), 100 millis)
+		// Wait for futures to finish
+	  Await.ready(Future.sequence(f1.flatten ++ f2), 200 millis)
 		
-    resp.getOutputStream.close()
+    val f1f = future {
+      Thread.sleep(10)
+      1 / 0
+    }
+
+    val f2f = future {
+      Thread.sleep(10)
+      "Infinity"
+    }
+
+    f1f fallbackTo f2f onSuccess {
+      case n => print(n.toString)
+    }
+
+		val p = promise[String]
+		val f = p.future
+		val producer = future {
+		  val r = "WORLD"
+		  p success r
+		}
+		val consumer = future {
+		  f onSuccess {
+		    case r => print("HELLO " + r)
+		  }
+		}
+
+
+
+    Thread.sleep(100)
+		
+		//At this point all futures have completed.
+    close()
 
   }
 }
