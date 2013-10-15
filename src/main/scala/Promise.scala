@@ -69,19 +69,21 @@ private[concurrent] object Promise {
      * @return <tt>true</tt> if successful
      */
     def updateState(oldState: AnyRef, newState: AnyRef) = {
-      println(s"updateState: $oldState and $newState")
-      if (obj == oldState) {
-        obj = newState
-        true
-      } else {
-        false
-      }
+      // println(s"updateState: $oldState and $newState")
+      obj.synchronized(
+        if (obj == oldState) {
+          obj = newState
+          true
+        } else {
+          false
+        }
+      )
     }
 
     @volatile var obj: AnyRef = Nil
 
     def getState() = {
-      obj;
+      obj.synchronized(obj)
     }
 
     // Start at "No callbacks"
