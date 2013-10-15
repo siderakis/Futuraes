@@ -1,113 +1,146 @@
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest, HttpServlet}
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
 
 class FuturaeServlet extends HttpServlet {
-
-
-  /** Starts an asynchronous computation and returns a `Future` object with the result of that computation.
-    *
-    * The result becomes available once the asynchronous computation is completed.
-    *
-    * @tparam T       the type of the result
-    * @param body     the asynchronous computation
-    * @param execctx  the execution context on which the future is run
-    * @return         the `Future` holding the result of the computation
-    */
-  def future[T](body: => T)(implicit execctx: ExecutionContext): Future[T] = Future[T](body)
-
 
   import ExecutionContextAE.ImplicitsAE._
 
   override def doGet(req: HttpServletRequest, resp: HttpServletResponse) = {
-		
-		val outputSream = resp.getOutputStream
-		import outputSream.{println => print, close}
-    
-		print("Scala Futures on App Engine")
-    
-		// Create 8 futures
-    val f1 = Seq[Traversable[Future[String]]](
-      (1 to 4).map(a => future("F1:" + a)),
-      (1 to 4).map(a => future("F2:" + a))
-    )
-		
-		// Print out values
-		f1.flatten.foreach(_.foreach(print))
 
-		// Create 2 futures with 100 values each
-    val f2 = Seq[Future[Traversable[String]]](
-      future((1 to 100).map(a => ("f1:" + a))),
-      future((1 to 100).map(a => ("f2:" + a)))
-    )
-		
-    // Print out values
-		f2.foreach(_.foreach(_.foreach(print)))
+    resp addHeader("Content-Type", "text/plain")
+    val outputStream = resp.getOutputStream
+    import outputStream.{println => print, close}
 
-		// Wait for futures to finish
-	  Await.ready(Future.sequence(f1.flatten ++ f2), 200 millis)
-		
-    val f1f = future {
-      Thread.sleep(10)
-      1 / 0
-    }
+    print("Scala Futures on App Engine")
 
-    val f2f = future {
-      Thread.sleep(10)
-      "Infinity"
-    }
+    traversableIOfFuturesDemo()
 
-    f1f fallbackTo f2f onSuccess {
-      case n => print(n.toString)
-    }
+    futureOfTraversableDemo()
 
-		val p = promise[String]
-		val f = p.future
-		val producer = future {
-		  val r = "WORLD"
-		  p success r
-		}
-		val consumer = future {
-		  f onSuccess {
-		    case r => print("HELLO " + r)
-		  }
-		}
+    fallbackDemo()
 
+    promiseDemo()
 
+    forComprehensionDemo()
 
-    Thread.sleep(100)
-		
-		//At this point all futures have completed.
+    timeoutDemo()
+
+    //At this point all futures have completed.
     close()
 
-  }
-}
 
 
-package scala.concurrent.impl {
 
+    def traversableIOfFuturesDemo() {
+      // Create 8 futures
+      val f1 = Seq[Traversable[Future[String]]](
+        (1 to 4).map(a => future("F1:" + a)),
+        (1 to 4).map(a => future("F2:" + a))
+      )
 
-private[concurrent] object Future {
+      // Print out values
+      f1.flatten.foreach(_.foreach(print))
+      Await.ready(Future.sequence(f1.flatten), 200 millis)
 
-  class PromiseCompletingRunnable[T](body: => T) extends Runnable {
-    val promise = new Promise.DefaultPromise[T]()
+    }
 
-    override def run() = {
-      promise complete {
-        try Success(body) catch {
-          case NonFatal(e) => Failure(e)
+    def futureOfTraversableDemo() {
+      // Create 2 futures with 100 values each
+      val f2 = Seq[Future[Traversable[String]]](
+        future((1 to 100).map(a => ("f1:" + a))),
+        future((1 to 100).map(a => ("f2:" + a)))
+      )
+
+      // Print out values
+      f2.foreach(_.foreach(_.foreach(print)))
+
+      // Wait for futures to finish
+      print("Blocking for results")
+      Await.ready(Future.sequence(f2), 200 millis)
+    }
+
+    def fallbackDemo() {
+      val f1 = future {
+        Thread.sleep(10)
+        1 / 0
+      }
+
+      val f2 = future {
+        Thread.sleep(10)
+        "Infinity"
+      }
+
+      val f3 = f1 fallbackTo f2
+
+      f3 onSuccess {
+        case n => print(n.toString)
+      }
+
+      Await.ready(f3, 200 millis)
+
+    }
+
+    def promiseDemo() {
+      val p = promise[String]
+      val f = p.future
+      val producer = future {
+        val r = "WORLD"
+        p success r
+      }
+      val consumer = future {
+        f onSuccess {
+          case r => print("HELLO " + r)
         }
       }
+
+      Await.ready(f, 200 millis)
+      Await.ready(producer, 200 millis)
+      Await.ready(consumer, 200 millis)
+
+    }
+
+    def forComprehensionDemo() {
+
+      val f = for {
+        a ← Future(10 / 2) // 10 / 2 = 5
+        b ← Future(a + 1) //  5 + 1 = 6
+        c ← Future(a - 1) //  5 - 1 = 4
+        if c > 3 // Future.filter
+      } yield b * c //  6 * 4 = 24
+
+      print("Blocking for results")
+      val result = Await.result(f, 100 millis)
+      print(result)
+
+
+    }
+
+    def timeoutDemo() {
+
+
+      def fallback[A](default: A, timeout: Duration): Future[A] = future {
+        Thread sleep timeout.toMillis
+        default
+      }
+
+      val timeout = 10 millis
+
+      val tasks = List(30, 12, 18, 6, 25, 10, 11, 80, 5)
+      val taskFutures: List[Future[String]] = tasks map {
+        ms =>
+          val search = future {
+            Thread sleep ms
+            f"$ms%02d:done"
+          }
+          Future firstCompletedOf Seq(search, fallback(f"$ms%02d:timeout", timeout))
+      }
+      val searchFuture: Future[List[String]] = Future sequence taskFutures
+      print("Blocking for results")
+      val result = Await result(searchFuture, timeout * tasks.length)
+      print(result.sorted.mkString("(", ", ", ")"))
+
     }
   }
-
-  def apply[T](body: => T)(implicit executor: ExecutionContext): scala.concurrent.Future[T] = {
-    val runnable = new PromiseCompletingRunnable(body)
-    executor.prepare.execute(runnable)
-    runnable.promise.future
-  }
 }
 
-}
