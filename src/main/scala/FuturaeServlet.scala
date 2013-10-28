@@ -1,3 +1,6 @@
+import com.google.appengine.api.urlfetch.{HTTPResponse, URLFetchServiceFactory}
+import com.google.cloud.sql.jdbc.internal.Url
+import java.net.URL
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest, HttpServlet}
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -14,50 +17,43 @@ class FuturaeServlet extends HttpServlet {
 
     print("Scala Futures on App Engine")
 
-    traversableIOfFuturesDemo()
-
-    futureOfTraversableDemo()
-
     fallbackDemo()
 
     promiseDemo()
 
+    urlFetchJavaFutures()
+
     forComprehensionDemo()
 
     timeoutDemo()
+
+    traversableOfFuturesDemo()
+
+    futureOfTraversableDemo()
 
     //At this point all futures have completed.
     close()
 
 
 
+    def urlFetchJavaFutures() {
+      implicit def f2future[T](f: java.util.concurrent.Future[T]) = future(f.get)
 
-    def traversableIOfFuturesDemo() {
-      // Create 8 futures
-      val f1 = Seq[Traversable[Future[String]]](
-        (1 to 4).map(a => future("F1:" + a)),
-        (1 to 4).map(a => future("F2:" + a))
-      )
+      val ws = URLFetchServiceFactory.getURLFetchService
+      // http://engineering.linkedin.com/play/play-framework-linkedin
+      val start = System.currentTimeMillis()
+      def getLatency(r: Any): Long = System.currentTimeMillis() - start
+      print("fetching google")
+      val googleTime = ws.fetchAsync(new URL("http://www.google.com")).map(getLatency)
+      print("fetching yahoo")
+      val yahooTime = ws.fetchAsync(new URL("http://www.yahoo.com")).map(getLatency)
+      print("fetching bing")
+      val bingTime = ws.fetchAsync(new URL("http://www.bing.com")).map(getLatency)
 
-      // Print out values
-      f1.flatten.foreach(_.foreach(print))
-      Await.ready(Future.sequence(f1.flatten), 200 millis)
-
-    }
-
-    def futureOfTraversableDemo() {
-      // Create 2 futures with 100 values each
-      val f2 = Seq[Future[Traversable[String]]](
-        future((1 to 100).map(a => ("f1:" + a))),
-        future((1 to 100).map(a => ("f2:" + a)))
-      )
-
-      // Print out values
-      f2.foreach(_.foreach(_.foreach(print)))
-
-      // Wait for futures to finish
-      print("Blocking for results")
-      Await.ready(Future.sequence(f2), 200 millis)
+      Await.ready(Future.sequence(Seq(googleTime, yahooTime, bingTime)).map {
+        case times =>
+          print(Map("google" -> times(0), "yahoo" -> times(1), "bing" -> times(2)).mkString("(", ", ", ")"))
+      }, 3000 millis)
     }
 
     def fallbackDemo() {
@@ -74,7 +70,7 @@ class FuturaeServlet extends HttpServlet {
       val f3 = f1 fallbackTo f2
 
       f3 onSuccess {
-        case n => print(n.toString)
+        case n => print("1 / 0 = " + n)
       }
 
       Await.ready(f3, 200 millis)
@@ -113,11 +109,9 @@ class FuturaeServlet extends HttpServlet {
       val result = Await.result(f, 100 millis)
       print(result)
 
-
     }
 
     def timeoutDemo() {
-
 
       def fallback[A](default: A, timeout: Duration): Future[A] = future {
         Thread sleep timeout.toMillis
@@ -141,6 +135,36 @@ class FuturaeServlet extends HttpServlet {
       print(result.sorted.mkString("(", ", ", ")"))
 
     }
+
+    def traversableOfFuturesDemo() {
+      // Create 8 futures
+      val f1 = Seq[Traversable[Future[String]]](
+        (1 to 4).map(a => future("F1:" + a)),
+        (1 to 4).map(a => future("F2:" + a))
+      )
+
+      // Print out values
+      f1.flatten.foreach(_.foreach(print))
+      Await.ready(Future.sequence(f1.flatten), 200 millis)
+
+    }
+
+    def futureOfTraversableDemo() {
+      // Create 2 futures with 100 values each
+      val f2 = Seq[Future[Traversable[String]]](
+        future((1 to 10).map(a => "f1:" + a)),
+        future((1 to 10).map(a => "f2:" + a))
+      )
+
+      // Print out values
+      f2.foreach(_.foreach(_.foreach(print)))
+
+      // Wait for futures to finish
+      print("Blocking for results")
+      Await.ready(Future.sequence(f2), 200 millis)
+    }
+
   }
+
 }
 
