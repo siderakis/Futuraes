@@ -1,0 +1,2 @@
+GET 	/play							controllers.PlayController.index
+GET 	/play/:name						controllers.PlayController.hello(name: String)
