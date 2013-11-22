@@ -22,7 +22,7 @@ trait PlayCommands {
     }
     } catch {
       case RoutesCompilationError(source, message, line, column) => {
-        throw new RuntimeException("ROUTES FILE ERROE!!! "+message) // reportCompilationError(state, RoutesCompilationException(source, message, line, column.map(_ - 1)))
+        throw new RuntimeException("ROUTES FILE ERROE!!! " + message) // reportCompilationError(state, RoutesCompilationException(source, message, line, column.map(_ - 1)))
       }
       case e => throw e
     }
@@ -46,7 +46,7 @@ trait PlaySettings {
   lazy val defaultPlaySettings = Seq[Setting[_]](
 
     routesImport := Seq.empty[String],
-    confDirectory <<= baseDirectory / "../src/main/conf",
+    confDirectory <<= baseDirectory / "src/main/conf",
 
     sourceGenerators in Compile <+= (state, confDirectory, sourceManaged in Compile, routesImport) map RouteFiles
   )

@@ -19,3 +19,5 @@ appengineSettings
 (gae.onStopHooks in gae.devServer in Compile) += { () =>
   println("bye")
 }
+
+play.PlayProject.defaultPlaySettings
