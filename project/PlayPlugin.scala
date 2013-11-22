@@ -12,8 +12,8 @@ object PlayProject extends Plugin with PlayKeys with PlayCommands with PlaySetti
 trait PlayCommands {
 
   val RouteFiles = (state: State, confDirectory: File, generatedDir: File, additionalImports: Seq[String]) => {
-    val scalaRoutes = (generatedDir ** "routes_*.scala")
-    (scalaRoutes.get).map(GeneratedSource(_)).foreach(_.sync())
+    val scalaRoutes = generatedDir ** "routes_*.scala"
+    scalaRoutes.get.map(GeneratedSource).foreach(_.sync())
     try { {
       (confDirectory * "*.routes").get ++ (confDirectory * "routes").get
     }.map {
@@ -22,12 +22,12 @@ trait PlayCommands {
     }
     } catch {
       case RoutesCompilationError(source, message, line, column) => {
-        throw new RuntimeException("ROUTES FILE ERROE!!! " + message) // reportCompilationError(state, RoutesCompilationException(source, message, line, column.map(_ - 1)))
+        throw new RuntimeException("Error with Routes file: " + message) // reportCompilationError(state, RoutesCompilationException(source, message, line, column.map(_ - 1)))
       }
       case e => throw e
     }
 
-    (scalaRoutes.get).map(_.getAbsoluteFile)
+    scalaRoutes.get.map(_.getAbsoluteFile)
 
   }
 }
