@@ -457,11 +457,10 @@ object RoutesCompiler {
       |// @DATE:%s
       |%s
       |
-      |//import play.core._
-      |//import play.core.Router._
-      |//import play.core.j._
+      |import play.core._
+      |import play.core.Router._
       |
-      |//import play.api.mvc._
+      |import play.api.mvc._
       |%s
       |
       |import Router.queryString
