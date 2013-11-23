@@ -1,6 +1,6 @@
 Futuraes
 ========
-##Scala Futures implementation for Google App Engine.
+###Scala Futures implementation for Google App Engine.
 
 
 Step 1. Add to your `build.sbt`:
@@ -35,11 +35,11 @@ Step 2. When using futures always use the provided ExecutionContext by importing
 Step 3. Profit!  *(optional)*
     
   
-### Also check out these related scala projects that work great on App Engine:  
+#### Also check out these related scala projects that work great on App Engine:  
 
-[Twirl](https://github.com/spray/twirl) The Play framework Scala template engine, stand-alone and packaged as an SBT plugin
+[Twirl](https://github.com/spray/twirl) The Play framework Scala **template engine**, stand-alone and packaged as an SBT plugin
 
-[PlayFramework-AppEngine](https://github.com/siderakis/playframework-appengine) The Play framework Scala routing and MVC, stand-alone and packaged as an SBT plugin.
+[PlayFramework-AppEngine](https://github.com/siderakis/playframework-appengine) The Play framework Scala **routing and MVC**, stand-alone and packaged as an SBT plugin.
  
 [Play-Json-Standalone](https://github.com/mandubian/play-json-alone) Plays amazing JSON API, as a stand-alone library.
  
