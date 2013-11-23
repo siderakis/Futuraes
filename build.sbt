@@ -1,10 +1,10 @@
 import sbtappengine.Plugin.{AppengineKeys => gae}
 
-sbtPlugin := true
+sbtPlugin := false
 
 organization := "com.siderakis"
 
-name := "Futuraes"
+name := "futuraes"
 
 scalaVersion := "2.10.2"
 
