@@ -1,5 +1,3 @@
-import sbtappengine.Plugin.{AppengineKeys => gae}
-
 sbtPlugin := false
 
 organization := "com.siderakis"
@@ -10,10 +8,8 @@ scalaVersion := "2.10.2"
 
 libraryDependencies ++= Seq(
   "javax.servlet" % "servlet-api" % "2.5" % "provided",
-  "org.mortbay.jetty" % "jetty" % "6.1.22" % "container"
+   "com.google.appengine"%"appengine-api-1.0-sdk"%"1.8.8"
 )
-
-appengineSettings
 
 publishMavenStyle := true
 
