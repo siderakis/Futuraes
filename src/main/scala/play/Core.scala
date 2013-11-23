@@ -1,6 +1,12 @@
 package play.core
 
 import play.api.mvc._
+import play.api.http.Status._
+import scala.Some
+import play.core.StaticPart
+import play.core.PathPattern
+import play.api.http.Status
+import play.Controller
 
 //import play.api.mvc.Results._
 
@@ -100,7 +106,7 @@ object Router {
         println("\n\npath: " + request.path)
         println("queryString: " + request.queryString)
         if (method == request.method) {
-          println("pathPattern: "+pathPattern)
+          println("pathPattern: " + pathPattern)
           pathPattern(request.path).map {
             groups =>
               RouteParams(groups, request.queryString)
@@ -114,17 +120,17 @@ object Router {
 
   }
 
-//  object Include {
+  //  object Include {
 
-    //    def apply(router: Router.Routes) = new {
-    //
-    //      def unapply(request: RequestHeader): Option[Handler] = {
-    //        router.routes.lift(request)
-    //      }
-    //
-    //    }
+  //    def apply(router: Router.Routes) = new {
+  //
+  //      def unapply(request: RequestHeader): Option[Handler] = {
+  //        router.routes.lift(request)
+  //      }
+  //
+  //    }
 
-//  }
+  //  }
 
   case class JavascriptReverseRoute(name: String, f: String)
 
@@ -170,12 +176,8 @@ object Router {
 
     def prefix: String
 
-    //
-
     def badRequest(error: String) = Action {
-      request =>
-      //  play.api.Play.maybeApplication.map(_.global.onBadRequest(request, error)).getOrElse(play.api.DefaultGlobal.onBadRequest(request, error))
-        new Result() {}
+      request => Controller.BadRequest(error)
     }
 
     def call(generator: => Handler): Handler = {
@@ -352,15 +354,7 @@ object Router {
 
 
     def invokeHandler(call: => Action, handler: HandlerDef): Handler = {
-
       call
-
-      //      d.call(call, handler) match {
-      //         case action: EssentialAction => new EssentialAction with RequestTaggingHandler {
-      //          def apply(rh: RequestHeader) = action(rh)
-      //          def tagRequest(rh: RequestHeader) = doTagRequest(rh, handler)
-      //        case handler => handler
-      //        }
     }
   }
 

@@ -19,9 +19,12 @@ trait ActionBuilder {
    * @param block the action code
    * @return an action
    */
-  def apply(block: Request => Result): Action = new Action {
-    def apply(ctx: Request) = try {
+  def apply(block: RequestHeader => Result): Action = new Action {
+
+
+    def apply(ctx: RequestHeader) = try {
       block(ctx)
+
     } catch {
       // NotImplementedError is not caught by NonFatal, wrap it
       case e: NotImplementedError => throw new RuntimeException(e)
@@ -53,7 +56,12 @@ trait ActionBuilder {
 object Action extends ActionBuilder
 
 
+trait Result extends NotNull {
 
-trait Result extends NotNull
+  def body: String
+
+  val status: Int
+
+}
 
 trait Action extends Handler

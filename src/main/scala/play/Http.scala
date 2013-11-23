@@ -4,13 +4,12 @@ import javax.servlet.http.HttpServletRequest
 
 
 trait Request extends RequestHeader {
-  self =>
-
 
 }
 
 case class HttpRequest(req: HttpServletRequest) extends RequestHeader {
-  def path: String = if (req.getServletPath.isEmpty) req.getPathInfo else req.getServletPath
+
+  def path: String = req.getServletPath + req.getPathInfo
 
   def method: String = req.getMethod
 
@@ -18,10 +17,10 @@ case class HttpRequest(req: HttpServletRequest) extends RequestHeader {
   def queryString: Map[String, Seq[String]] = {
     Option(req.getQueryString).map {
       _.split("&").foldLeft(Map[String, Seq[String]]().withDefaultValue(Seq.empty)) {
-          (map, pair) =>
-            val kv = pair.split("=")
-            map.updated(kv(0), map(kv(0)) ++ Seq(kv(1)))
-        }
+        (map, pair) =>
+          val kv = pair.split("=")
+          map.updated(kv(0), map(kv(0)) ++ Seq(kv(1)))
+      }
     }.getOrElse(Map())
   }
 }
@@ -47,7 +46,9 @@ trait RequestHeader {
 /**
  * An Handler handles a request.
  */
-trait Handler
+trait Handler {
+  def apply(ctx: RequestHeader): Result
+}
 
 /**
  * Reference to an Handler.
